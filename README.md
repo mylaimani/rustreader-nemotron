@@ -9,7 +9,7 @@ Licence: [MIT](LICENSE).
 > Rusted fasteners hide their markings. A mechanic who can't read a ₹30 bolt ends up
 > guessing ("closest fit") or travelling to shops with the old part. RustReader measures it.
 
-**Live endpoint:** https://5t2v7gt4kwkghxncjnzdd6g5zi0kldaf.lambda-url.ap-southeast-2.on.aws/
+**Live endpoint:** https://uyoot3fvlu4q7wimoneqsnrybu0akjof.lambda-url.ap-southeast-2.on.aws/
 **Code:** https://github.com/mylaimani/rustreader-nemotron
 **Demo video:** _(paste link)_
 
@@ -43,7 +43,7 @@ export NEBIUS_API_KEY="...your key..."
 python3 tools/test_nemotron.py samples/synthetic/M12x1.25x50_heavy.jpg
 ```
 
-## Judge checklist (where to find each item)
+## Where to find each item
 | Requirement | Where |
 |---|---|
 | Technical report | [docs/RustReader_Technical_Report.pdf](docs/RustReader_Technical_Report.pdf) (source: [docs/TECHNICAL_REPORT.md](docs/TECHNICAL_REPORT.md)) |

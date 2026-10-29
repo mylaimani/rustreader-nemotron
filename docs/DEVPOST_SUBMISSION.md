@@ -1,13 +1,13 @@
-# Devpost submission — copy/paste fields
+# Nebius x NVIDIA Global AI Hackathon — submission fields (copy/paste)
 
 ## Project name
-RustReader Deep Scan
+RustReader — rusted bolt identification with NVIDIA Nemotron on Nebius
 
-## Elevator pitch (short tagline)
-Point your phone at a rusted bolt nobody can read. An OpenCV 5 agent on AWS measures its thread size, pitch and length, judges the rust, and tells you what to buy.
+## Elevator pitch
+Point your phone at a rusted bolt nobody can read. An OpenCV measurement agent finds its size, and NVIDIA Nemotron on Nebius Token Factory double-checks the photo and explains the result to the mechanic in English and Tamil.
 
-## Featured path
-Agentic Vision with OpenCV 5
+## Track
+Best Apps and Agents
 
 ## About the project
 
@@ -15,54 +15,80 @@ Agentic Vision with OpenCV 5
 Old fasteners rust, and rust hides everything: head markings, thread pitch, sometimes even the size. A relative of mine who works in fastener manufacturing could not identify a battery bolt worth about ₹30; the "closest fit" he used instead risked a ₹5,000 repair. Mechanics here travel 15 km to hardware shops carrying the old bolt to match it. Existing fastener-ID apps are trained on clean catalogue photos and fail on exactly these rusted parts.
 
 ### What it does
-Place the bolt on a printed A4 mat (four ArUco markers) and take one photo. RustReader Deep Scan:
+Place the bolt on a printed A4 mat (four ArUco markers) and take one photo. RustReader:
 - straightens the photo and converts pixels to millimetres,
-- measures shank diameter, length and head type (hex, socket cap, countersunk, flanged),
+- measures shank diameter, length and head type,
 - reads the thread pitch with an FFT of the thread edge, even under rust,
-- scores rust severity and shows a "Rust Mode" enhanced view,
+- scores rust severity,
 - matches ISO metric coarse/fine and UNC tables, e.g. **M12x1.25 x 50 hex bolt, spanner 18 mm**,
+- asks **NVIDIA Nemotron-3.5-Super-VL** to look at the same photo and independently name the head type and rust level — a second, different kind of eye on the measurement,
+- asks Nemotron to write 2–3 plain sentences for the mechanic — what the part is, which spanner fits, what to do about the rust — in **English and Tamil**,
 - recommends replace or reuse (advisory) and links to nearby hardware shops or an online supplier.
 
-The agentic part: **what OpenCV sees decides what happens next**. Missing markers, blur, a tilted or folded mat, or two bolts in view lead to a specific request for a new photo. Heavy rust switches thread reading to a CLAHE + Sobel sub-pixel edge tool, and a weak FFT peak triggers a retry with the other tool. If the threads are still unreadable it asks for a closer, side-lit photo and fuses both photos. If two sizes still fit, it asks the human to choose instead of guessing. Every step is logged in a decision trace shown in the app.
+The agent loop decides what happens next from what the tools see: bad photo → ask for a new one; heavy rust → different edge tool; two sizes still fit → ask the human. Every step, including both Nemotron calls and whether Nemotron agreed with OpenCV, is recorded in a decision trace shown on the result page.
 
-### How we built it
-- **OpenCV 5.0** (`opencv-python-headless 5.0.0.93`): ArUco detection with sub-pixel corners, RANSAC homography, perspective rectification to 12 px/mm, Laplacian sharpness, a local-background + HSV segmentation, PCA alignment, width-profile measurement, CLAHE/bilateral/Sobel edge refinement, HSV rust analysis.
-- **Agent**: a perception → decision → action loop in Python; each OpenCV tool returns observations; a transparent policy decides the next tool call or user action; the trace is stored per session.
-- **AWS**: AWS Lambda (Python 3.12, **arm64 Graviton**) behind a Lambda Function URL serves both the web app and the API; Amazon S3 stores sessions, decision traces and scans (EXIF stripped, 30-day expiry); Amazon CloudWatch collects Embedded Metric Format metrics (latency, agent outcomes) on a dashboard. One idempotent `deploy.sh` builds the OpenCV 5 arm64 bundle and deploys everything.
-- **Evaluation**: a synthetic generator renders bolts with exact known geometry, rust and perspective; plus real rusted fasteners measured with a caliper.
+### How we used NVIDIA Nemotron and Nebius Token Factory
+Two NVIDIA open models, both served by Nebius Token Factory through its OpenAI-compatible Chat Completions API (`agent/nemotron_client.py`, `agent/nemotron_review.py`):
+
+| Model | Job |
+|---|---|
+| `nvidia/Nemotron-3.5-Super-VL` (120B, vision) | Second opinion on the straightened bolt photo (head type, rust level, one-line condition note), and the English + Tamil explainer |
+| `nvidia/Nemotron-3_5-Lightning` (30B, 3B active) | Fast fallback explainer when Super VL does not return a usable answer |
+
+Design choices:
+- Calls are plain `urllib` POSTs — no SDK in the Lambda bundle, so the Token Factory integration is about 100 lines.
+- Both calls send `chat_template_kwargs: {"enable_thinking": false}`. Without it these reasoning models spend the whole token budget thinking and return an empty answer.
+- Every Nemotron call is optional and fails soft: without `NEBIUS_API_KEY` the agent runs pure-OpenCV exactly as before. The demo never goes blank because of a model timeout.
+- Images are shrunk to 640 px JPEG before the vision call to keep it fast and cheap. One vision + one text call per identified bolt costs about $0.001, so the Builder Program's $25 credit covers roughly 25,000 scans.
+
+Nebius: Token Factory for both models. Hosting is AWS Lambda (arm64) + S3, because the OpenCV part of the pipeline was already deployed there; the Nemotron calls are the only external service the Lambda talks to.
+
+### What was built during the submission period
+The OpenCV measurement pipeline existed before the hackathon (built for the OpenCV AI Competition, Oct 2026). New for this hackathon:
+- `agent/nemotron_client.py` — Token Factory client (thinking switch, JSON-reply parser that survives `<think>` blocks and quoted example JSON, vision reply-as-list handling)
+- `agent/nemotron_review.py` — vision second opinion + bilingual explanation, with Super VL → Lightning fallback
+- Nemotron steps in the agent loop and decision trace (`agent/rustreader_agent.py`)
+- "Nemotron explains" panel on the result page (`web/index.html`)
+- `NEBIUS_API_KEY` wiring in `infra/deploy.sh`, `tools/test_nemotron.py`, MIT licence, this repo
 
 ### Challenges we ran into
-- Rust destroys thread edges. A single binary outline was not enough for heavy rust, so the agent chooses between two edge tools and checks FFT peak confidence.
-- Countersunk screws: the cone hides where the head ends, and their nominal length includes the head. The head shape is now classified from the side profile.
-- Uneven workshop lighting: a single threshold failed, so we model the paper brightness locally with a large median filter.
-- Real shadows: in our field photos the bolt's shadow was segmented as metal. We now require a pixel to be darker than about half the local paper brightness, then grow the outline back to the true half-way edge within 0.8 mm.
-- Deploying OpenCV 5 to Lambda without Docker: we bundle the manylinux aarch64 wheels (146 MB unzipped) via S3.
+- **Empty replies from reasoning models.** The first calls to Nemotron returned nothing: the model used the entire `max_tokens` on its hidden thinking. Fixed with `chat_template_kwargs.enable_thinking = false` plus "detailed thinking off" in the system prompt.
+- **Tamil quality.** We tried Lightning (30B) as the main explainer because it is faster and cheaper. Its English was fine but its Tamil mixed in Hindi and Finnish words. The 120B Super VL writes clean spoken Tamil, so it took over the explainer job and Lightning became the fallback.
+- **Template echo.** Occasionally a model returned our JSON template with the placeholders unfilled. `looks_like_real_explanation()` catches this and triggers the fallback model.
+- **Parsing.** Reasoning models sometimes quote example JSON inside their thinking, so we parse the *last* JSON object in the reply, after any `</think>` tag.
 
 ### Accomplishments that we're proud of
-- Correct thread spec on 8/8 synthetic bolts with exact ground truth (fine thread under heavy rust, inch UNC, partially threaded, countersunk, socket head), pitch error ≤ 0.01 mm, and 3/3 bad photos correctly sent back.
-- A field test with real fasteners from a local mechanic found four failure modes synthetic data missed (cast shadows read as metal, grey-printed markers misjudged as blur, shiny zinc shanks splitting one bolt into two, rippled paper). Three are fixed and the fourth is correctly caught by the agent. The same flange bolt photographed separately is identified consistently as M8 x 60 (pitch 1.29 / 1.31 mm). See report section 7.2.
-- Full round trip on Lambda (Graviton) under 1 second.
+- A mechanic who reads little technical English gets the answer in Tamil, on a phone, from one photo.
+- Nemotron's independent head-type and rust reading is recorded next to the OpenCV measurement in the trace, so a disagreement is visible instead of silently averaged away.
+- The whole Token Factory integration is small, dependency-free and switchable with one environment variable.
 
 ### What we learned
-Measurement beats classification for this problem: with a calibrated mat, size is geometry, not guesswork, and needs no training data. And an agent that knows when to ask for a better photo is more useful than one that always answers.
+Reasoning models need to be told when *not* to reason. For a short structured answer, thinking mode costs the whole token budget and gives nothing back. And the bigger model is worth it for a low-resource language: Tamil quality was the deciding factor between the two Nemotron models, not speed.
 
 ### What's next for RustReader
-- Caliper-measured real test set to report real-world accuracy.
-- Bring this pipeline into the RustReader Flutter app (offline on-device scan + cloud deep scan).
-- Nuts, washers, pan/button heads; thread-pitch from a close-up without the mat.
+- Caliper-measured real test set to report real-world accuracy, including how often Nemotron and OpenCV agree.
+- Move the explainer to a Nebius Serverless Endpoint and the batch evaluation to Serverless Jobs.
+- Bring the pipeline into the RustReader Flutter app (offline on-device scan + cloud deep scan with Nemotron).
 - Shop stock lookup: scan → "available at 2 shops near you" with our industrial-supply partner.
 
+## Feedback on Nebius Token Factory / NVIDIA models
+1. `enable_thinking: false` via `chat_template_kwargs` is essential for short structured replies but is not obvious from the model cards. A note on the Token Factory model page ("this is a reasoning model; to get a direct answer send …") would have saved us the first hour.
+2. Model ids are inconsistent between the two Nemotron 3.5 models we used: `Nemotron-3.5-Super-VL` uses a dot, `Nemotron-3_5-Lightning` uses an underscore. Easy to mistype.
+3. The vision model sometimes returns `message.content` as a list of parts rather than a string; the OpenAI-compatible shape is otherwise exact. Worth documenting.
+4. Tamil output from the 30B Lightning model drifts into other languages; the 120B Super VL is reliable. A language-quality note per model would help builders targeting Indian languages.
+5. The OpenAI-compatible endpoint worked first time with plain `urllib` and no SDK — appreciated for a size-limited Lambda bundle.
+
 ## Built with
-opencv, python, numpy, aws-lambda, aws-graviton, amazon-s3, amazon-cloudwatch, aruco, html, javascript
+nvidia-nemotron, nebius-token-factory, opencv, python, numpy, aws-lambda, amazon-s3, aruco, html, javascript
 
 ## Try it out
-- Live app: https://5t2v7gt4kwkghxncjnzdd6g5zi0kldaf.lambda-url.ap-southeast-2.on.aws/
-- Code: https://github.com/mylaimani/rustreader-deep-scan
-- Printable mat: (live app → "Print the mat (A4)")
+- Live app: https://uyoot3fvlu4q7wimoneqsnrybu0akjof.lambda-url.ap-southeast-2.on.aws/
+- Code (MIT): https://github.com/mylaimani/rustreader-nemotron
+- Printable mat: live app → "Print the mat (A4)"
+- Quick local test of the Nemotron calls: `python3 tools/test_nemotron.py samples/synthetic/M12x1.25x50_heavy.jpg`
 
 ## Video
-(YouTube unlisted link)
+(YouTube public link, 3 minutes or shorter)
 
-## Files to attach (if the form asks)
-- docs/TECHNICAL_REPORT.md (export to PDF)
-- docs/architecture.png, docs/agent_workflow.png
+## IRL event
+(choose the Builders & Brews city if you attended one; otherwise leave blank)

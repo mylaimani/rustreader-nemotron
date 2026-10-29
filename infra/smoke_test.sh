@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Sends the bundled heavy-rust sample to the deployed endpoint and prints the agent's answer.
-#   bash infra/smoke_test.sh https://xxxx.lambda-url.ap-south-1.on.aws/
+# Sends the bundled heavy-rust sample to the deployed endpoint and prints the agent's answer,
+# including the NVIDIA Nemotron steps when NEBIUS_API_KEY is set on the Lambda.
+#   bash infra/smoke_test.sh https://xxxx.lambda-url.ap-southeast-2.on.aws/
 set -euo pipefail
 URL="${1%/}"
 python3 - "$URL" <<'PY'
@@ -13,6 +14,15 @@ started = time.time()
 body = json.loads(urllib.request.urlopen(request, timeout=60).read())
 print("round trip ms:", round((time.time() - started) * 1000))
 print("action:", body["response"]["action"])
-print("part:", body["response"].get("result", {}).get("part_name"))
+result = body["response"].get("result", {})
+print("part:", result.get("part_name"))
 print("trace steps:", len(body["trace"]))
+nemotron_step_names = [step.get("tool", "") for step in body["trace"]]
+nemotron_step_names = [name for name in nemotron_step_names if "nemotron" in name]
+print("nemotron trace steps:", nemotron_step_names or "NONE - is NEBIUS_API_KEY set on the Lambda?")
+explanation = result.get("explanation")
+if explanation:
+    print("explained by:", explanation.get("model"))
+    print("english:", explanation.get("english"))
+    print("tamil:", explanation.get("tamil"))
 PY
