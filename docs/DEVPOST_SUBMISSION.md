@@ -73,7 +73,7 @@ Reasoning models need to be told when *not* to reason. For a short structured an
 - Shop stock lookup: scan → "available at 2 shops near you" with our industrial-supply partner.
 
 ## Feedback on Nebius Token Factory / NVIDIA models
-1. `enable_thinking: false` via `chat_template_kwargs` is essential for short structured replies but is not obvious from the model cards. A note on the Token Factory model page ("this is a reasoning model; to get a direct answer send …") would have saved us the first hour.
+1. `enable_thinking: false` via `chat_template_kwargs` is essential for short structured replies but is not obvious from the model cards. Saying "detailed thinking off" in the system prompt is not enough on its own: with only the prompt instruction, Super VL intermittently returned an empty reply with `finish_reason=length` (seen in our CloudWatch logs) — the whole 1500-token budget went on hidden thinking. A note on the Token Factory model page ("this is a reasoning model; to get a direct answer send …") would have saved us the first hour.
 2. Model ids are inconsistent between the two Nemotron 3.5 models we used: `Nemotron-3.5-Super-VL` uses a dot, `Nemotron-3_5-Lightning` uses an underscore. Easy to mistype.
 3. The vision model sometimes returns `message.content` as a list of parts rather than a string; the OpenAI-compatible shape is otherwise exact. Worth documenting.
 4. Tamil output from the 30B Lightning model drifts into other languages; the 120B Super VL is reliable. A language-quality note per model would help builders targeting Indian languages.
