@@ -61,6 +61,7 @@ The OpenCV measurement pipeline existed before the hackathon (built for the Open
 - A mechanic who reads little technical English gets the answer in Tamil, on a phone, from one photo.
 - Nemotron's independent head-type and rust reading is recorded next to the OpenCV measurement in the trace, so a disagreement is visible instead of silently averaged away.
 - The whole Token Factory integration is small, dependency-free and switchable with one environment variable.
+- Measured on the live endpoint (Sydney Lambda → Token Factory): about **5 s** per scan warm, of which the OpenCV measurement is under 1 s and the two Nemotron calls (vision check, then explanation) about 2 s each; first call after idle is ~14 s because of the Lambda cold start.
 
 ### What we learned
 Reasoning models need to be told when *not* to reason. For a short structured answer, thinking mode costs the whole token budget and gives nothing back. And the bigger model is worth it for a low-resource language: Tamil quality was the deciding factor between the two Nemotron models, not speed.
