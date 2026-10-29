@@ -76,7 +76,7 @@ def ask_nemotron_about_image(system_prompt, user_text, jpeg_base64, maximum_toke
                      "image_url": {"url": "data:image/jpeg;base64," + jpeg_base64}}]
     messages = [{"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content}]
-    return post_chat_completion(VISION_MODEL, messages, maximum_tokens)
+    return post_chat_completion(VISION_MODEL, messages, maximum_tokens, disable_thinking=True)
 
 
 def strip_reasoning_block(reply_text):
