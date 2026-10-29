@@ -1,0 +1,12 @@
+photo_file,designation,diameter_mm,pitch_mm,length_mm,head_across_flats_mm,rust_level,notes
+../samples/synthetic/M8x40_rusty.jpg,M8,8,1.25,40,13,moderate,synthetic
+../samples/synthetic/M12x1.25x50_heavy.jpg,M12x1.25,12,1.25,50,18,heavy,synthetic fine thread
+../samples/synthetic/UNC_5-16x1.5.jpg,5/16-18 UNC,7.94,1.411,38.1,12.7,moderate,synthetic inch
+../samples/synthetic/M6x20_clean.jpg,M6,6,1.0,20,10,none,synthetic clean
+../samples/synthetic/M10x80_partial.jpg,M10,10,1.5,80,16,heavy,synthetic partially threaded
+../samples/synthetic/fail_corner_hidden.jpg,M8,8,1.25,40,13,moderate,one marker covered
+../samples/synthetic/fail_blurry.jpg,M8,8,1.25,40,13,moderate,expected: reshoot (blurry)
+../samples/synthetic/fail_two_bolts.jpg,M8,8,1.25,40,13,moderate,expected: reshoot (two objects)
+../samples/synthetic/fail_threads_worn_M10.jpg,M10,10,,30,16,heavy,expected: closer photo (threads unreadable)
+../samples/synthetic/M6x16_countersunk.jpg,M6,6,1.0,16,12,heavy,synthetic countersunk
+../samples/synthetic/M8x25_socket.jpg,M8,8,1.25,25,13,moderate,synthetic socket head

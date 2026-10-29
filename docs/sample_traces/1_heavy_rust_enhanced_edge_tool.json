@@ -1,0 +1,169 @@
+{
+ "session_id": "c92ef6822b57",
+ "photo_count": 1,
+ "status": "finished",
+ "final_result": {
+  "part_name": "M12x1.25 x 50 hex bolt",
+  "designation": "M12x1.25",
+  "thread_system": "metric fine",
+  "length_mm": 50,
+  "length_is_standard": true,
+  "wrench_size_mm": 18.0,
+  "tool": "spanner 18 mm",
+  "head_type": "hex",
+  "probability": 0.992,
+  "confirmed_by_human": false,
+  "measured": {
+   "major_diameter_mm": 11.58,
+   "length_under_head_mm": 50.0,
+   "head_side_width_mm": 18.17,
+   "pitch_mm": 1.25,
+   "pitch_trusted": true
+  },
+  "rust": {
+   "rust_fraction": 0.993,
+   "rust_level": "heavy"
+  },
+  "rust_advice": "Heavy rust. Replace it. Do not reuse on any safety-critical joint.",
+  "safety_note": "Advisory only: a photo cannot see stretch, fatigue or internal cracks. Torque-to-yield bolts are single-use regardless. When in doubt, replace.",
+  "replace_recommended": true,
+  "next_actions": [
+   {
+    "type": "find_nearby_store",
+    "label": "Find in nearby hardware shops",
+    "url": "https://www.google.com/maps/search/M12x1.25+x+50+hex+bolt+hardware+shop"
+   },
+   {
+    "type": "order_online",
+    "label": "Order from The Industrial 360",
+    "url": "https://theindustrial360.com"
+   }
+  ]
+ },
+ "trace": [
+  {
+   "step": 1,
+   "photo": 1,
+   "tool": "detect_mat_markers",
+   "observation": {
+    "markers_found": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "photo_pixels_per_mm": 12.11
+   },
+   "decision": "continue",
+   "reason": "enough markers to compute scale and perspective",
+   "timestamp": 1793076119.507
+  },
+  {
+   "step": 2,
+   "photo": 1,
+   "tool": "assess_image_quality",
+   "observation": {
+    "marker_sharpness": 5.77,
+    "paper_brightness": 244.0,
+    "problems": [],
+    "reprojection_error_mm": 0.018,
+    "markers_used": 4
+   },
+   "decision": "continue",
+   "reason": "sharp and bright enough to measure",
+   "timestamp": 1793076119.559
+  },
+  {
+   "step": 3,
+   "photo": 1,
+   "tool": "find_fastener_contours",
+   "observation": {
+    "objects_found": 1,
+    "largest_touches_border": false
+   },
+   "decision": "continue",
+   "reason": "exactly one fastener",
+   "timestamp": 1793076119.604
+  },
+  {
+   "step": 4,
+   "photo": 1,
+   "tool": "measure_bolt",
+   "observation": {
+    "object_type": "bolt",
+    "head_type": "hex",
+    "major_diameter_mm": 11.58,
+    "minor_diameter_mm": 11.42,
+    "length_under_head_mm": 50.0,
+    "head_side_width_mm": 18.17,
+    "head_height_mm": 8.0,
+    "total_length_mm": 58.0
+   },
+   "decision": "continue",
+   "reason": "bolt with shank about 11.58 mm",
+   "timestamp": 1793076119.609
+  },
+  {
+   "step": 5,
+   "photo": 1,
+   "tool": "measure_rust",
+   "observation": {
+    "rust_fraction": 0.993,
+    "rust_level": "heavy"
+   },
+   "decision": "choose_pitch_tool",
+   "reason": "rust level decides which edge tool to try first",
+   "timestamp": 1793076119.61
+  },
+  {
+   "step": 6,
+   "photo": 1,
+   "tool": "estimate_thread_pitch",
+   "observation": {
+    "pitch_mm": 1.25,
+    "confidence": 128.19,
+    "threaded_length_mm": 44.5,
+    "edge_mode": "enhanced",
+    "pitch_trusted": true
+   },
+   "decision": "accept_pitch",
+   "reason": "rust is heavy, so started with the enhanced edge tool; peak is clear",
+   "timestamp": 1793076119.615
+  },
+  {
+   "step": 7,
+   "photo": 1,
+   "tool": "match_specification",
+   "observation": {
+    "top_candidates": [
+     [
+      "M12x1.25",
+      0.992
+     ],
+     [
+      "M12x1.5",
+      0.008
+     ],
+     [
+      "M10x1.25",
+      0.0
+     ]
+    ]
+   },
+   "decision": "identify",
+   "reason": "M12x1.25 is clearly the best fit",
+   "timestamp": 1793076119.615
+  },
+  {
+   "step": 8,
+   "photo": 1,
+   "tool": "plan_next_action",
+   "observation": {
+    "rust_level": "heavy"
+   },
+   "decision": "recommend_replacement_and_find_part",
+   "reason": "rust level decides whether to push replacement or just offer the part",
+   "timestamp": 1793076119.615
+  }
+ ]
+}

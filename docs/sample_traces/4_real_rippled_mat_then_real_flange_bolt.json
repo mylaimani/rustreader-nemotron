@@ -1,0 +1,211 @@
+{
+ "session_id": "a62628f9cdf4",
+ "photo_count": 2,
+ "status": "finished",
+ "final_result": {
+  "part_name": "M8 x 60 flange bolt",
+  "designation": "M8",
+  "thread_system": "metric coarse",
+  "length_mm": 60,
+  "length_is_standard": true,
+  "wrench_size_mm": 13.0,
+  "tool": "spanner 13 mm",
+  "head_type": "flanged",
+  "probability": 0.678,
+  "confirmed_by_human": false,
+  "measured": {
+   "major_diameter_mm": 8.58,
+   "length_under_head_mm": 58.42,
+   "head_side_width_mm": 15.83,
+   "pitch_mm": 1.312,
+   "pitch_trusted": true
+  },
+  "rust": {
+   "rust_fraction": 0.001,
+   "rust_level": "none"
+  },
+  "rust_advice": "No visible rust. Reuse is usually fine if threads are undamaged.",
+  "safety_note": "Advisory only: a photo cannot see stretch, fatigue or internal cracks. Torque-to-yield bolts are single-use regardless. When in doubt, replace.",
+  "replace_recommended": false,
+  "next_actions": [
+   {
+    "type": "find_nearby_store",
+    "label": "Find in nearby hardware shops",
+    "url": "https://www.google.com/maps/search/M8+x+60+flange+bolt+hardware+shop"
+   },
+   {
+    "type": "order_online",
+    "label": "Order from The Industrial 360",
+    "url": "https://theindustrial360.com"
+   }
+  ]
+ },
+ "trace": [
+  {
+   "step": 1,
+   "photo": 1,
+   "tool": "detect_mat_markers",
+   "observation": {
+    "markers_found": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "photo_pixels_per_mm": 11.66
+   },
+   "decision": "continue",
+   "reason": "enough markers to compute scale and perspective",
+   "timestamp": 1793076120.352
+  },
+  {
+   "step": 2,
+   "photo": 1,
+   "tool": "compute_homography",
+   "observation": {
+    "reprojection_error_mm": 4.495803356170654
+   },
+   "decision": "request_new_photo",
+   "reason": "markers do not agree on one flat sheet (mat bent or folded?)",
+   "timestamp": 1793076120.354
+  },
+  {
+   "step": 3,
+   "photo": 2,
+   "tool": "detect_mat_markers",
+   "observation": {
+    "markers_found": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "photo_pixels_per_mm": 12.42
+   },
+   "decision": "continue",
+   "reason": "enough markers to compute scale and perspective",
+   "timestamp": 1793076120.413
+  },
+  {
+   "step": 4,
+   "photo": 2,
+   "tool": "assess_image_quality",
+   "observation": {
+    "marker_sharpness": 9.31,
+    "paper_brightness": 171.0,
+    "problems": [],
+    "reprojection_error_mm": 0.26,
+    "markers_used": 4
+   },
+   "decision": "continue",
+   "reason": "sharp and bright enough to measure",
+   "timestamp": 1793076120.442
+  },
+  {
+   "step": 5,
+   "photo": 2,
+   "tool": "find_fastener_contours",
+   "observation": {
+    "objects_found": 1,
+    "largest_touches_border": false
+   },
+   "decision": "continue",
+   "reason": "exactly one fastener",
+   "timestamp": 1793076120.469
+  },
+  {
+   "step": 6,
+   "photo": 2,
+   "tool": "measure_bolt",
+   "observation": {
+    "object_type": "bolt",
+    "head_type": "flanged",
+    "major_diameter_mm": 8.58,
+    "minor_diameter_mm": 3.48,
+    "length_under_head_mm": 58.42,
+    "head_side_width_mm": 15.83,
+    "head_height_mm": 9.42,
+    "total_length_mm": 67.83
+   },
+   "decision": "continue",
+   "reason": "bolt with shank about 8.58 mm",
+   "timestamp": 1793076120.473
+  },
+  {
+   "step": 7,
+   "photo": 2,
+   "tool": "measure_rust",
+   "observation": {
+    "rust_fraction": 0.001,
+    "rust_level": "none"
+   },
+   "decision": "choose_pitch_tool",
+   "reason": "rust level decides which edge tool to try first",
+   "timestamp": 1793076120.474
+  },
+  {
+   "step": 8,
+   "photo": 2,
+   "tool": "estimate_thread_pitch",
+   "observation": {
+    "pitch_mm": 1.323,
+    "confidence": 7.12,
+    "threaded_length_mm": 52.6,
+    "edge_mode": "mask"
+   },
+   "decision": "retry_with_enhanced_edges",
+   "reason": "FFT peak confidence 7.12 is below 12.0",
+   "timestamp": 1793076120.475
+  },
+  {
+   "step": 9,
+   "photo": 2,
+   "tool": "estimate_thread_pitch",
+   "observation": {
+    "pitch_mm": 1.312,
+    "confidence": 19.04,
+    "threaded_length_mm": 22.5,
+    "edge_mode": "enhanced",
+    "pitch_trusted": true
+   },
+   "decision": "accept_pitch",
+   "reason": "best of both edge tools: enhanced with confidence 19.04",
+   "timestamp": 1793076120.478
+  },
+  {
+   "step": 10,
+   "photo": 2,
+   "tool": "match_specification",
+   "observation": {
+    "top_candidates": [
+     [
+      "M8",
+      0.678
+     ],
+     [
+      "5/16-18 UNC",
+      0.321
+     ],
+     [
+      "M10x1.25",
+      0.001
+     ]
+    ]
+   },
+   "decision": "identify",
+   "reason": "M8 is clearly the best fit",
+   "timestamp": 1793076120.478
+  },
+  {
+   "step": 11,
+   "photo": 2,
+   "tool": "plan_next_action",
+   "observation": {
+    "rust_level": "none"
+   },
+   "decision": "identify_and_offer_part_search",
+   "reason": "rust level decides whether to push replacement or just offer the part",
+   "timestamp": 1793076120.478
+  }
+ ]
+}

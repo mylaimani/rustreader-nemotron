@@ -1,0 +1,18 @@
+flowchart TB
+  P["📱 Phone / browser (user or judge)<br/>web page + printed A4 ArUco mat"]
+  subgraph AWS["AWS · ap-southeast-2"]
+    URL["Lambda Function URL (HTTPS)"]
+    subgraph L["AWS Lambda · Python 3.12 · arm64 Graviton · 2 GB"]
+      AG["RustReader agent<br/><b>perceive → decide → act</b><br/>rule policy + decision trace"]
+      CV["<b>OpenCV 5 tools</b><br/>detect_mat_markers · ArUco, sub-pixel corners<br/>rectify · RANSAC homography, 12 px/mm<br/>assess_image_quality · Laplacian sharpness<br/>find_fastener_contours · local background + HSV<br/>measure_bolt · PCA axis + width profile<br/>estimate_thread_pitch · FFT, mask or CLAHE+Sobel edges<br/>measure_rust · HSV rust fraction, Rust Mode view<br/>match_specification · ISO metric / UNC table"]
+      AG <--> CV
+    end
+    S3[("Amazon S3<br/>sessions + decision traces<br/>scan images, EXIF stripped<br/>30-day expiry")]
+    CW["Amazon CloudWatch<br/>logs · EMF metrics · dashboard"]
+  end
+  EXT["Next-action links<br/>nearby hardware shops · The Industrial 360"]
+  P -- "photo" --> URL --> AG
+  AG -- "ask new photo · ask human · result + trace" --> P
+  AG <--> S3
+  AG --> CW
+  AG -.-> EXT

@@ -1,0 +1,29 @@
+flowchart TD
+  A(["Photo uploaded"]) --> B["detect_mat_markers"]
+  B -- "fewer than 2 markers" --> R1[/"ACT: ask for new photo<br/>'keep all 4 corner squares in view'"/]
+  B -- "photo px/mm < 6" --> R2[/"ACT: ask to move closer"/]
+  B -- "ok" --> C["compute_homography + rectify<br/>assess_image_quality"]
+  C -- "reprojection error > 0.5 mm" --> R3[/"ACT: ask to flatten mat"/]
+  C -- "blurry / too dark" --> R4[/"ACT: ask for steady / brighter photo"/]
+  C -- "ok" --> D["find_fastener_contours"]
+  D -- "0, 2+ objects or touching edge" --> R5[/"ACT: ask to place ONE bolt in area"/]
+  D -- "one object" --> E["measure_bolt"]
+  E -- "nut or washer shape" --> R6[/"ACT: explain unsupported"/]
+  E -- "bolt" --> F["measure_rust"]
+  F -- "moderate/heavy rust" --> G1["estimate_thread_pitch<br/>ENHANCED edges first"]
+  F -- "none/light rust" --> G2["estimate_thread_pitch<br/>MASK edges first"]
+  G1 & G2 -- "FFT confidence low" --> G3["retry with the OTHER edge tool"]
+  G1 & G2 & G3 --> H["fuse with earlier photos<br/>match_specification"]
+  H -- "ambiguous, pitch unreadable,<br/>first photo" --> R7[/"ACT: ask for closer, side-lit photo"/]
+  H -- "still ambiguous" --> R8[/"ACT: human picks from top 3<br/>(human-in-the-loop)"/]
+  H -- "clear winner" --> I["plan_next_action"]
+  R8 -- "user's answer" --> I
+  I -- "moderate/heavy rust" --> J[/"ACT: identify + recommend REPLACEMENT<br/>+ find part nearby / online"/]
+  I -- "none/light rust" --> K[/"ACT: identify + offer part search"/]
+  NOTE["Every ask-for-photo action: user retakes,<br/>same session continues, measurements are fused"]
+  classDef act fill:#3a2410,stroke:#E65100,color:#fff;
+  classDef tool fill:#1d1d1d,stroke:#FFD54F,color:#fff;
+  class R1,R2,R3,R4,R5,R6,R7,R8,J,K act;
+  class NOTE note;
+  classDef note fill:#121212,stroke:#666,color:#aaa,stroke-dasharray: 4 3;
+  class B,C,D,E,F,G1,G2,G3,H,I tool;

@@ -1,0 +1,21 @@
+{
+  "widgets": [
+    {"type": "metric", "x": 0, "y": 0, "width": 12, "height": 6,
+     "properties": {"title": "Agent outcomes per hour", "region": "__REGION__", "stat": "Sum", "period": 3600, "view": "timeSeries",
+       "metrics": [["RustReader", "Requests", "Route", "analyze", "Action", "final_identification"],
+                   ["RustReader", "Requests", "Route", "analyze", "Action", "request_new_photo"],
+                   ["RustReader", "Requests", "Route", "analyze", "Action", "request_human_confirmation"],
+                   ["RustReader", "Requests", "Route", "answer", "Action", "final_identification"]]}},
+    {"type": "metric", "x": 12, "y": 0, "width": 12, "height": 6,
+     "properties": {"title": "Analyze latency (ms, p50 / p95)", "region": "__REGION__", "period": 300, "view": "timeSeries",
+       "metrics": [["RustReader", "LatencyMs", "Route", "analyze", "Action", "final_identification", {"stat": "p50"}],
+                   ["RustReader", "LatencyMs", "Route", "analyze", "Action", "final_identification", {"stat": "p95"}]]}},
+    {"type": "metric", "x": 0, "y": 6, "width": 12, "height": 6,
+     "properties": {"title": "Lambda errors / throttles", "region": "__REGION__", "stat": "Sum", "period": 300,
+       "metrics": [["AWS/Lambda", "Errors", "FunctionName", "__FUNCTION__"], ["AWS/Lambda", "Throttles", "FunctionName", "__FUNCTION__"]]}},
+    {"type": "metric", "x": 12, "y": 6, "width": 12, "height": 6,
+     "properties": {"title": "Lambda duration (ms)", "region": "__REGION__", "period": 300,
+       "metrics": [["AWS/Lambda", "Duration", "FunctionName", "__FUNCTION__", {"stat": "p50"}],
+                   ["AWS/Lambda", "Duration", "FunctionName", "__FUNCTION__", {"stat": "p95"}]]}}
+  ]
+}

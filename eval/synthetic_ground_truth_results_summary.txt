@@ -1,0 +1,12 @@
+Photos evaluated: 11
+  final_identification: 8
+  request_new_photo: 3
+Correct thread spec when identified: 8/8 (100%)
+diameter_error_mm: mean 0.38, max 0.61 (n=9)
+length_error_mm: mean 0.03, max 0.25 (n=9)
+pitch_error_mm: mean 0.00, max 0.00 (n=8)
+Median processing time: 138 ms
+Not identified on first photo / wrong:
+  - ../samples/synthetic/fail_blurry.jpg: request_new_photo  | expected: reshoot (blurry)
+  - ../samples/synthetic/fail_two_bolts.jpg: request_new_photo  | expected: reshoot (two objects)
+  - ../samples/synthetic/fail_threads_worn_M10.jpg: request_new_photo  | expected: closer photo (threads unreadable)

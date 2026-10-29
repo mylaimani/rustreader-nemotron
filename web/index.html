@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RustReader Deep Scan</title>
+<style>
+  :root { --bg:#121212; --panel:#1d1d1d; --line:#2e2e2e; --text:#eeeeee; --muted:#a0a0a0;
+          --rust:#E65100; --rust-dark:#BF360C; --amber:#FFD54F; --ok:#66BB6A; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  main { max-width:860px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:24px; margin:0; } h1 span { color:var(--rust); }
+  .sub { color:var(--muted); margin:4px 0 20px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  button, .button { background:var(--rust); color:#fff; border:0; border-radius:8px; padding:10px 14px; font:inherit;
+           font-weight:600; cursor:pointer; text-decoration:none; display:inline-block; }
+  button.secondary, .button.secondary { background:transparent; border:1px solid var(--line); color:var(--text); font-weight:500; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .message { border-left:4px solid var(--amber); padding:10px 12px; background:#2a2414; border-radius:6px; }
+  .result-title { font-size:26px; font-weight:700; color:var(--amber); margin:0 0 4px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:12px 0; }
+  .stat { background:#161616; border:1px solid var(--line); border-radius:8px; padding:10px; }
+  .stat b { display:block; font-size:18px; } .stat small { color:var(--muted); }
+  .rust-bar { height:10px; background:#333; border-radius:5px; overflow:hidden; margin-top:6px; }
+  .rust-bar div { height:100%; background:linear-gradient(90deg,var(--amber),var(--rust),var(--rust-dark)); }
+  .tabs button { background:transparent; border:1px solid var(--line); color:var(--muted); padding:6px 10px; }
+  .tabs button.active { color:#fff; border-color:var(--rust); }
+  .view img { width:100%; border-radius:8px; margin-top:10px; background:#fff; }
+  ol.trace { list-style:none; padding:0; margin:0; }
+  ol.trace li { border-left:2px solid var(--line); padding:4px 0 10px 14px; position:relative; }
+  ol.trace li::before { content:""; position:absolute; left:-6px; top:9px; width:10px; height:10px; border-radius:50%; background:var(--muted); }
+  ol.trace li.stop::before { background:var(--amber); } ol.trace li.done::before { background:var(--ok); }
+  .tool { font-family:ui-monospace,Menlo,monospace; font-size:13px; color:var(--amber); }
+  .decision { font-family:ui-monospace,Menlo,monospace; font-size:12px; background:#2a2a2a; padding:1px 6px; border-radius:4px; }
+  .reason { color:var(--muted); font-size:14px; }
+  details summary { cursor:pointer; color:var(--muted); font-size:12px; }
+  pre { white-space:pre-wrap; word-break:break-word; font-size:12px; color:#bbb; margin:4px 0 0; }
+  .note { color:var(--muted); font-size:13px; }
+  input[type=file] { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Rust<span>Reader</span> Deep Scan</h1>
+  <p class="sub">Identifies old, rusted nuts and bolts by size and thread. OpenCV 5 agent + NVIDIA Nemotron reasoning on Nebius Token Factory.</p>
+
+  <section class="panel">
+    <div class="row">
+      <label class="button" for="photoInput">📷 Scan a bolt</label>
+      <input id="photoInput" type="file" accept="image/*" capture="environment">
+      <button class="secondary" onclick="runSample('M12x1.25x50_heavy.jpg')">Try sample: heavy rust</button>
+      <button class="secondary" onclick="runSample('fail_two_bolts.jpg')">Sample: two bolts</button>
+      <button class="secondary" onclick="runSample('fail_blurry.jpg')">Sample: blurry</button>
+      <a class="button secondary" href="mat.pdf" target="_blank">Print the mat (A4)</a>
+    </div>
+    <p class="note">Place ONE bolt on the printed mat (100% scale), keep all 4 corner squares in view, shoot from above.</p>
+    <div id="status" class="note"></div>
+  </section>
+
+  <section id="agentPanel" class="panel" hidden></section>
+  <section id="imagesPanel" class="panel" hidden>
+    <div class="row tabs" id="imageTabs"></div>
+    <div class="view"><img id="imageView" alt="Processed bolt"></div>
+  </section>
+  <section class="panel" id="tracePanel" hidden>
+    <h3 style="margin-top:0">Agent decision trace</h3>
+    <p class="note">Each step: the OpenCV tool that ran, what it saw, and what the agent decided next.</p>
+    <ol class="trace" id="traceList"></ol>
+  </section>
+</main>
+<script>
+let sessionId = null;
+let currentImages = {};
+const imageLabels = { measured: "Measured", rust_overlay: "Rust map", rust_mode: "Rust Mode (enhanced)" };
+
+function setStatus(text) { document.getElementById("status").textContent = text; }
+function escapeHtml(text) { const div = document.createElement("div"); div.textContent = String(text ?? ""); return div.innerHTML; }
+
+async function shrinkPhotoToBase64(fileOrBlob) {
+  const bitmap = await createImageBitmap(fileOrBlob, { imageOrientation: "from-image" });
+  const longest = Math.max(bitmap.width, bitmap.height);
+  const scale = Math.min(1, 3600 / longest);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  let quality = 0.9;
+  let dataUrl = canvas.toDataURL("image/jpeg", quality);
+  while (dataUrl.length > 5500000 && quality > 0.5) { quality -= 0.1; dataUrl = canvas.toDataURL("image/jpeg", quality); }
+  return dataUrl;
+}
+
+async function sendPhoto(fileOrBlob) {
+  setStatus("Uploading and analysing…");
+  const imageBase64 = await shrinkPhotoToBase64(fileOrBlob);
+  const started = performance.now();
+  const reply = await fetch("analyze", { method: "POST", headers: { "Content-Type": "application/json" },
+                                         body: JSON.stringify({ session_id: sessionId, image_base64: imageBase64 }) });
+  const data = await reply.json();
+  if (!reply.ok) { setStatus("Error: " + (data.error || reply.status)); return; }
+  setStatus(`Photo ${data.photo_count} analysed in ${Math.round(performance.now() - started)} ms (round trip).`);
+  sessionId = data.session_id;
+  showAgentResponse(data.response);
+  showImages(data.images);
+  showTrace(data.trace);
+}
+
+async function runSample(name) {
+  sessionId = null;
+  setStatus("Loading sample…");
+  const blob = await (await fetch("sample/" + name)).blob();
+  await sendPhoto(blob);
+}
+
+async function answerQuestion(option) {
+  const reply = await fetch("answer", { method: "POST", headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ session_id: sessionId, option: option }) });
+  const data = await reply.json();
+  showAgentResponse(data.response);
+  showTrace(data.trace);
+}
+
+function showAgentResponse(response) {
+  const panel = document.getElementById("agentPanel");
+  panel.hidden = false;
+  if (response.action === "request_new_photo") {
+    panel.innerHTML = `<div class="message"><b>The agent needs another photo.</b><br>${escapeHtml(response.message)}</div>
+      <p class="row"><label class="button" for="photoInput">📷 Take another photo</label></p>`;
+  } else if (response.action === "request_human_confirmation") {
+    const buttons = response.options.map(option =>
+      `<button class="secondary" onclick='answerQuestion(${JSON.stringify(option)})'>${escapeHtml(option)}</button>`).join("");
+    panel.innerHTML = `<div class="message"><b>Your call:</b> ${escapeHtml(response.question)}</div><p class="row">${buttons}</p>`;
+  } else if (response.action === "final_identification") {
+    panel.innerHTML = renderResult(response.result);
+  } else {
+    panel.innerHTML = `<div class="message">${escapeHtml(response.message)}</div>`;
+  }
+}
+
+function renderResult(result) {
+  const measured = result.measured;
+  const rustPercent = Math.round(result.rust.rust_fraction * 100);
+  const actions = result.next_actions.map(action =>
+    `<a class="button ${action.type === "order_online" ? "secondary" : ""}" href="${action.url}" target="_blank" rel="noopener">${escapeHtml(action.label)}</a>`).join(" ");
+  const explanation = result.explanation ? `
+    <div style="margin:12px 0; padding:12px; background:#14201a; border:1px solid #2e4639; border-radius:8px">
+      <b style="color:var(--ok)">Nemotron explains</b>
+      <p style="margin:6px 0">${escapeHtml(result.explanation.english)}</p>
+      <p style="margin:6px 0" lang="ta">${escapeHtml(result.explanation.tamil)}</p>
+      <small class="note">Written by ${escapeHtml(result.explanation.model)} on Nebius Token Factory</small>
+    </div>` : "";
+  return `<p class="result-title">${escapeHtml(result.part_name)}</p>
+    <div class="note">${escapeHtml(result.thread_system)} · ${escapeHtml(result.tool || ("spanner " + result.wrench_size_mm + " mm"))} · match ${Math.round(result.probability * 100)}%${result.confirmed_by_human ? " · confirmed by you" : ""}</div>
+    <div class="grid">
+      <div class="stat"><small>Shank diameter</small><b>${measured.major_diameter_mm} mm</b></div>
+      <div class="stat"><small>Thread pitch</small><b>${measured.pitch_trusted ? measured.pitch_mm + " mm" : "unclear"}</b></div>
+      <div class="stat"><small>Length under head</small><b>${measured.length_under_head_mm} mm</b></div>
+      <div class="stat"><small>Rust: ${escapeHtml(result.rust.rust_level)}</small><b>${rustPercent}%</b><div class="rust-bar"><div style="width:${rustPercent}%"></div></div></div>
+    </div>
+    <div class="message"><b>${result.replace_recommended ? "Replace recommended." : "Condition"}</b> ${escapeHtml(result.rust_advice)}</div>
+    ${explanation}
+    <p class="note">${escapeHtml(result.safety_note)}</p>
+    <p class="row">${actions}</p>`;
+}
+
+function showImages(images) {
+  const panel = document.getElementById("imagesPanel");
+  currentImages = images || {};
+  const names = Object.keys(currentImages);
+  panel.hidden = names.length === 0;
+  if (names.length === 0) return;
+  document.getElementById("imageTabs").innerHTML = names.map(name =>
+    `<button data-name="${name}" onclick="selectImage('${name}')">${imageLabels[name] || name}</button>`).join("");
+  selectImage(names[0]);
+}
+
+function selectImage(name) {
+  document.getElementById("imageView").src = "data:image/jpeg;base64," + currentImages[name];
+  document.querySelectorAll("#imageTabs button").forEach(button => button.classList.toggle("active", button.dataset.name === name));
+}
+
+function showTrace(trace) {
+  document.getElementById("tracePanel").hidden = false;
+  document.getElementById("traceList").innerHTML = trace.map(step => {
+    const kind = step.decision.startsWith("request") ? "stop" : (["identify", "recommend_replacement_and_find_part", "identify_and_offer_part_search"].includes(step.decision) ? "done" : "");
+    return `<li class="${kind}"><span class="tool">#${step.step} · photo ${step.photo} · ${escapeHtml(step.tool)}</span>
+      → <span class="decision">${escapeHtml(step.decision)}</span><div class="reason">${escapeHtml(step.reason)}</div>
+      <details><summary>what OpenCV saw</summary><pre>${escapeHtml(JSON.stringify(step.observation, null, 1))}</pre></details></li>`;
+  }).join("");
+}
+
+document.getElementById("photoInput").addEventListener("change", event => {
+  const file = event.target.files[0];
+  if (file) sendPhoto(file).catch(error => setStatus("Error: " + error));
+  event.target.value = "";
+});
+</script>
+</body>
+</html>
